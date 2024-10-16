@@ -1,0 +1,12 @@
+CMakeLists2.txt
+.vs
+*.sln
+*.vcxproj*
+CMakeFiles
+CMakeCache.txt
+cmake_install.cmake
+Debug
+Release
+x64
+RiftTracker.dir
+api_key.txt
