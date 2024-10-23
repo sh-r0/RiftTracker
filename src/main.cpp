@@ -2,15 +2,26 @@
 #include <iostream>
 
 int32_t main(int32_t _argc, char** _argv) {
+    int consoleWidth = 80;
+    int titleHeight = 5;
+    int padding = 3;
+
+    displayTitle();
+
+
+    for (int i = 0; i < padding; ++i) {
+        std::cout << '\n';
+    }
+
     int width = 50;
     int height = 20;
     int startX = 5;
-    int startY = 3;
+    int startY = titleHeight + padding + 1;
 
     int width2 = 50;
     int height2 = 20;
     int startX2 = startX + width + 5;
-    int startY2 = 3;
+    int startY2 = titleHeight + padding + 1;
 
     drawFrame(width, height, startX, startY);
 
@@ -50,6 +61,12 @@ int32_t main(int32_t _argc, char** _argv) {
     std::cout << cuttedTag;
 
     setCursorPosition(0, startY + height + 1);
+
+    moveCursorToBottom();
+
+    std::cout << "Nacisnij dowolny klawisz, aby zakonczyc.";
+
+    std::cin.get();
 
     return 0;
 }
