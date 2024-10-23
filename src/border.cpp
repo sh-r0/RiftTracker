@@ -10,6 +10,48 @@ constexpr int bottomRight = 188;
 constexpr int horizontal = 205;
 constexpr int vertical = 186;
 
+void setConsoleColor(int color) {
+    SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), color);
+}
+
+int getConsoleWidth() {
+    CONSOLE_SCREEN_BUFFER_INFO csbi;
+    int width = 80;
+
+    if (GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi)) {
+        width = csbi.srWindow.Right - csbi.srWindow.Left + 1;
+    }
+
+    return width;
+}
+
+void displayTitle() {
+    setConsoleColor(9); // Ustawienie koloru tekstu na jasnoniebieski
+
+   // std::string title[] = {
+    std::cout << R"(  
+     ____  _  __ _     _____               _
+    |  _ \(_)/ _| |_  |_   _| __ __ _  ___| | _____ _ __ 
+    | |_) | | |_| __|   | || '__/ _` |/ __| |/ / _ \ '__|
+    |  _ <| |  _| |_    | || | | (_| | (__|   <  __/ |
+    |_| \_\_|_|  \__|   |_||_|  \__,_|\___|_|\_\___|_|
+)" << '\n';
+   // };
+
+   // int consoleWidth = getConsoleWidth();
+   // int titleWidth = title[0].length();
+
+  /*  for (const auto& line : title) {
+        // Obliczenie iloœci spacji potrzebnych do wyœrodkowania
+        int padding = (consoleWidth - line.length()) / 2;
+        if (padding < 0) {
+            padding = 0;  // Zabezpieczenie przed ujemn¹ wartoœci¹ padding
+        }
+        std::cout << std::string(padding, ' ') << line << '\n';
+    }
+    */
+    setConsoleColor(7); // Przywrócenie domyœlnego koloru
+}
 
 void setCursorPosition(int x, int y) {
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -127,3 +169,17 @@ std::string cutText(const std::string& text, int maxLength) {
     }
     return text;
 }
+
+void moveCursorToBottom() {
+    CONSOLE_SCREEN_BUFFER_INFO csbi;
+    int consoleHeight = 25; 
+
+    if (GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi)) {
+        consoleHeight = csbi.srWindow.Bottom - csbi.srWindow.Top + 1;
+    }
+
+    COORD position = { 0, static_cast<SHORT>(consoleHeight - 1) };
+    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), position);
+}
+
+
