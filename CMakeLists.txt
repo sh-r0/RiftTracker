@@ -7,4 +7,4 @@ project(RiftTracker)
 
 #set(curlLibDir)
 
-add_executable(${PROJECT_NAME} "src/main.cpp")
+add_executable(${PROJECT_NAME} "src/main.cpp" "src/border.cpp")
