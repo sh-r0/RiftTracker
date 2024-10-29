@@ -2,6 +2,10 @@
 #include <iostream>
 #include <windows.h>
 #include <conio.h>
+#include <string>
+#include <thread>
+#include <vector>
+#include <chrono>
 
 constexpr int topLeft = 201;
 constexpr int topRight = 187;
@@ -13,6 +17,8 @@ constexpr int vertical = 186;
 void setConsoleColor(int color) {
     SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), color);
 }
+
+
 
 int getConsoleWidth() {
     CONSOLE_SCREEN_BUFFER_INFO csbi;
@@ -26,9 +32,8 @@ int getConsoleWidth() {
 }
 
 void displayTitle() {
-    setConsoleColor(9); // Ustawienie koloru tekstu na jasnoniebieski
+    setConsoleColor(9); // jasnoniebieski 
 
-   // std::string title[] = {
     std::cout << R"(  
      ____  _  __ _     _____               _
     |  _ \(_)/ _| |_  |_   _| __ __ _  ___| | _____ _ __ 
@@ -36,21 +41,7 @@ void displayTitle() {
     |  _ <| |  _| |_    | || | | (_| | (__|   <  __/ |
     |_| \_\_|_|  \__|   |_||_|  \__,_|\___|_|\_\___|_|
 )" << '\n';
-   // };
-
-   // int consoleWidth = getConsoleWidth();
-   // int titleWidth = title[0].length();
-
-  /*  for (const auto& line : title) {
-        // Obliczenie iloœci spacji potrzebnych do wyœrodkowania
-        int padding = (consoleWidth - line.length()) / 2;
-        if (padding < 0) {
-            padding = 0;  // Zabezpieczenie przed ujemn¹ wartoœci¹ padding
-        }
-        std::cout << std::string(padding, ' ') << line << '\n';
-    }
-    */
-    setConsoleColor(7); // Przywrócenie domyœlnego koloru
+    setConsoleColor(7); //domyslny kolor
 }
 
 void setCursorPosition(int x, int y) {
@@ -60,10 +51,6 @@ void setCursorPosition(int x, int y) {
 }
 
 void drawFrame(int width, int height, int startX, int startY) {
-    if (width < 2 || height < 2) {
-        std::cerr << "Width and height must be at least 2.\n";
-        return;
-    }
 
     setCursorPosition(startX, startY);
     std::cout << static_cast<char>(topLeft);
@@ -183,3 +170,78 @@ void moveCursorToBottom() {
 }
 
 
+void setConsoleWindowSize(int width, int height) {
+    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+
+    COORD bufferSize = { static_cast<SHORT>(width), static_cast<SHORT>(height) };
+    SetConsoleScreenBufferSize(hConsole, bufferSize);
+
+    SMALL_RECT windowSize = { 0, 0, static_cast<SHORT>(width - 1), static_cast<SHORT>(height - 1) };
+    SetConsoleWindowInfo(hConsole, TRUE, &windowSize);
+}
+
+
+void playSwordAnimation(int startX, int startY) {
+    using namespace std::chrono_literals;
+
+    std::vector<std::string> symbol = {
+    
+        "        @@@@@@@@@@@@@                ",
+        "         @@*++======@@@@@@@@           ",
+        "           @@=+=====@*++++=:*@@@      ",
+        "           @@=====+=@@@@@@@@@*=-@@@    ",
+        "         @@@@=+++++=@%%%%%%%#@@@*=*@@  ",
+        "        @@*@@=+++++=@%%%%%%%%%@#@@*=@@ ",
+        "       @@*%@@=***++=@%%%%%%%%%%@@#@%+@@ ",
+        "      @@+%@@@=***+*=@%%%%%%%%%%%%%#@%+@@",
+        "     @@**@@@@=*****+@###%%%%%%#%%%%#@#+@@",
+        "     @@#@@#@@+*****+@###**#%%###%%%%@@*@@",
+        "     @@#@@%@@******+@#*##*+*###*#%%%@@#@@",
+        "     @@#@@#@@+*****+@##***+**##**###@@#@@",
+        "     @@##@#@@+*****+@*************#+@##@@",
+        "      @@#@@@@++*+*++@**+++**++****+@@#@@ ",
+        "       @%#@@@+***+++@++++++*+*+*++@@##@ ",
+        "        @%%@@+++++++@+++++++***+%@@#%@  ",
+        "         @@@@++++++=@@@@@@@@@@@@@@@@@@@@",
+        "          @@-+++++++++++++=++++++=+*@@ ",
+        "         @%-++======++=++========+*@@  ",
+        "        @@@@@@@@@@@@@@@@@@@@@@@@@@@       "
+    };
+
+
+    const int fade_delay = 150;
+    const int visible_pause = 1000;
+
+    for (int fade_step = 0; fade_step < symbol.size(); ++fade_step) {
+        for (int i = 0; i < symbol.size(); ++i) {
+            setCursorPosition(startX, startY + i);
+            if (i <= fade_step) {
+                std::cout << std::string(symbol[i].size(), ' ');
+            }
+            else {
+                std::cout << symbol[i];
+            }
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(fade_delay));
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(visible_pause));
+
+    for (int fade_step = symbol.size() - 1; fade_step >= 0; --fade_step) {
+        for (int i = 0; i < symbol.size(); ++i) {
+            setCursorPosition(startX, startY + i);
+            if (i < fade_step) {
+                std::cout << std::string(symbol[i].size(), ' ');
+            }
+            else {
+                std::cout << symbol[i];
+            }
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(fade_delay));
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(visible_pause));
+
+    for (int i = 0; i < symbol.size(); ++i) {
+        setCursorPosition(startX, startY + i);
+        std::cout << std::string(symbol[i].size(), ' ');
+    }
+}
