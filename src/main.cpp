@@ -1,107 +1,16 @@
-﻿#include "border.hpp"
+﻿#include "networking.hpp"
+#include "border.hpp"
 #include <iostream>
 #include <fstream>
 
-#include "networking.hpp"
-
 int32_t main(int32_t _argc, char** _argv) {
-<<<<<<< Updated upstream
-<<<<<<< HEAD
-    
-    curl_g = curl_easy_init();
-    curl_global_init(CURL_GLOBAL_ALL);
-    char* responseBuff = (char*)malloc(rBuffSize_c);
-    if (!responseBuff) return -1;
-
-    ZeroMemory(responseBuff, rBuffSize_c);
-    curl_easy_setopt(curl_g, CURLOPT_NOPROGRESS, 1L);
-    curl_easy_setopt(curl_g, CURLOPT_WRITEFUNCTION, write_data);
-    curl_easy_setopt(curl_g, CURLOPT_HEADERDATA, nullptr);
-    curl_easy_setopt(curl_g, CURLOPT_WRITEDATA, (void*)responseBuff);
-
-    loadApiKey("api_key.txt");
-    std::string gameName = "Agurin";
-    std::string tagLine = "EUW";
-
-    sendRequest(urlBegin_c + gameName + "/" + tagLine + "?api_key=" + apiKey_g);
-    nlohmann::json responseJson;
-    responseJson = responseBuff;
-    std::cout << responseBuff;
-=======
-    int consoleWidth = 80;
-    int titleHeight = 5;
-    int padding = 3;
-
-    displayTitle();
-    setConsoleWindowSize(100, 40);
-
-    for (int i = 0; i < padding; ++i) {
-        std::cout << '\n';
-    }
-
-    int width = 50;
-    int height = 30;
-    int startX = 5;
-    int startY = titleHeight + padding + 1;
-
-    std::cout << "         Wcisnij Enter aby rozpoczac...";
-    std::cin.get();
-
-    int symbolHeight = 20;
-    height = std::max(height, symbolHeight);
-    drawFrame(width, height, startX, startY);
-
-    int nameWidth = static_cast<int>(width * 0.6);
-    int tagWidth = static_cast<int>(width * 0.3);
-    int fieldHeight = 3;
-
-    int nameStartX = startX + 2;
-    int nameStartY = startY + 2;
-    int tagStartX = nameStartX + nameWidth + 2;
-    int tagStartY = nameStartY;
-
-    drawFrame(nameWidth, fieldHeight, nameStartX, nameStartY);
-    drawFrame(tagWidth, fieldHeight, tagStartX, tagStartY);
-
-    std::string nameInput = getInputText(nameStartX, nameStartY, nameWidth);
-    std::string cuttedName = cutText(nameInput, nameWidth - 2);
-
-    std::string tagInput = getInputText(tagStartX, tagStartY, tagWidth);
-    std::string cuttedTag = cutText(tagInput, tagWidth - 2);
-
-    //druga ramka
-    int rightStartX = startX + width + 5;
-    drawFrame(width, height, startX + width + 5, startY);
-
-    playSwordAnimation(rightStartX + 2, startY + 2);
-
-    int NameWidth2 = nameWidth;
-    int TagWidth2 = tagWidth;
-    int NameHeight2 = 3;
-    int NameStartX2 = rightStartX + 2;
-    int NameStartY2 = startY + 2;
-
-
-    for (int i = 0; i < NameHeight2; i++) {
-        setCursorPosition(NameStartX2, NameStartY2 + i);
-        std::cout << std::string(width - 4, ' ');
-    }
-    drawFrame(NameWidth2, NameHeight2, NameStartX2, NameStartY2);
-    drawFrame(TagWidth2, NameHeight2, NameStartX2 + NameWidth2 + 2, NameStartY2);
-
-    setCursorPosition(NameStartX2 + 1, NameStartY2 + 1);
-    std::cout << cuttedName;
-    setCursorPosition(NameStartX2 + NameWidth2 + 3, NameStartY2 + 1);
-    std::cout << cuttedTag;
-
-    moveCursorToBottom();
->>>>>>> a9902ad6ce4ffed551bc97052e907d2f9fb1d5e8
-=======
     initClient();
     playerInfo_t p = getPlayerInfo("Agurin", "Euw");
     std::vector<std::string> matches = getMatchesList(p.puuid);
-    matchInfo_t mInfo = getMatchInfo(matches[0], p.puuid);
->>>>>>> Stashed changes
+    for (auto match : matches) {
+        matchInfo_t m = getMatchInfo(match, p.puuid);
+        std::cout << std::format("{}\nkda: {}/{}/{}\n", m.win ? "victory" : "defeat", m.kills, m.deaths, m.assists);
+    }
 
     return 0;
 }
