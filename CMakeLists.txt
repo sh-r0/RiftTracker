@@ -18,13 +18,6 @@ include_directories("${jsonIncDir}")
 
 link_directories("${curlLibDir}")
 
-<<<<<<< Updated upstream
-
-add_executable(${PROJECT_NAME} "src/main.cpp")
-=======
-add_executable(${PROJECT_NAME} "src/main.cpp" "src/networking.cpp" "src/networking.cpp")
->>>>>>> Stashed changes
-
 target_link_libraries(${PROJECT_NAME} ${libsList})
 
 add_executable(${PROJECT_NAME} "src/main.cpp" "src/border.cpp" "src/networking.cpp")
