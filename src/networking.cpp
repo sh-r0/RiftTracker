@@ -128,31 +128,26 @@ matchInfo_t getMatchInfo(stringCRef _matchId, stringCRef _puuid) {
         std::format("api_key={}", apiKey_g)
     ));
     nlohmann::json responseJson = getResponseJson();
-    std::cout << responseJson.dump(1);
     size_t playerIndex = 0;
     for (; playerIndex < responseJson.at("metadata").at("participants").size(); playerIndex++) {
         if (responseJson.at("metadata").at("participants").at(playerIndex) == _puuid) break;
     }
     nlohmann::json& playerDto = responseJson.at("info").at("participants").at(playerIndex);
-    std::cout << playerDto.dump(1);
     matchInfo_t res{};
-    
+
     //check for win
-    for (auto& team : responseJson.at("info").at("teams")) 
+    for (auto& team : responseJson.at("info").at("teams"))
         if (team.at("teamId") == playerDto.at("teamId")) {
-            if (team.at("win") == "true")
-                res.win = true;
-            else res.win = false;
+            res.win = team.at("win");
         }
         else continue;
-    
+
     res.kills = playerDto.at("kills");
     res.deaths = playerDto.at("deaths");
     res.assists = playerDto.at("assists");
 
     return res;
 }
-
 
 /*
 int32_t main35(int32_t _argc, char** _argv) {
