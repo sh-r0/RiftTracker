@@ -11,31 +11,29 @@
 #include <iomanip>
 
 void displayPlayerStats(const playerInfo_t& player, int startX, int startY, int nameWidth, int tagWidth) {
-    int frameWidth = nameWidth + tagWidth + 6; // Dodanie dodatkowej szerokości na krawędź
+    int frameWidth = nameWidth + tagWidth + 6; 
 
-    // Czyszczenie obszaru
     for (int i = 0; i < 6; i++) {
         setCursorPosition(startX, startY + i);
         std::cout << std::string(frameWidth, ' '); // Upewnij się, że czyścisz odpowiednią szerokość
     }
 
-    // Wyświetlanie nazwy i tagu
+    // nazwa i tag
     setCursorPosition(startX, startY);
     std::cout << "Nazwa: " << std::left << std::setw(nameWidth - 6) << player.gameName
         << " Tag: #" << player.tagLine;
 
-    // Wyświetlanie rangi i ilości gier (odkomentuj i dostosuj szerokości)
+    // ranga i dlugosc gier
     setCursorPosition(startX, startY + 1);
     // std::cout << "Ranga: " << std::left << std::setw(nameWidth - 6) << player.rank
     //           << " Ilosc gier: " << player.gamesPlayed;
 
-    // Wyświetlanie win ratio
+    // win ratio
     setCursorPosition(startX, startY + 2);
     // std::cout << "Win ratio: " << std::fixed << std::setprecision(2) << player.winRatio << "%";
 }
 
 void clearFrame(int startX, int startY, int width, int height) {
-    // Czyścimy cały obszar ramki włącznie z zawartością
     for (int y = startY; y <= startY + height; ++y) {
         setCursorPosition(startX, y);
         std::cout << std::string(width + 1, ' ');
@@ -51,17 +49,14 @@ void clearMatchesDisplay(int startX, int startY, int width, int height) {
 
 
 void clearMatchDetails(int startX, int startY, int width, int height) {
-    width += 25; // Taka sama szerokość jak w displayMatchDetails
-    height = 12; // Zwiększamy wysokość aby upewnić się, że obejmujemy cały obszar szczegółów meczu
+    width += 25; 
+    height = 12; 
 
-    // Czyścimy każdy znak w obszarze, włącznie z miejscami gdzie była ramka
     for (int y = startY; y <= startY + height; ++y) {
         setCursorPosition(startX, y);
-        // Dodajemy +1 do szerokości aby upewnić się, że czyścimy też prawą krawędź
         std::cout << std::string(width + 1, ' ');
     }
 
-    // Dla pewności czyścimy jeszcze jeden wiersz poniżej
     setCursorPosition(startX, startY + height + 1);
     std::cout << std::string(width + 1, ' ');
 }
@@ -74,7 +69,7 @@ void displayMatches(const std::vector<std::string>& matches,
     int startY,
     int frameWidth) {
 
-    frameWidth += 25; // Dopasowujemy szerokość do ramki szczegółów meczu
+    frameWidth += 25; 
     clearMatchesDisplay(startX, startY, frameWidth - 4, 20);
 
     int displayCount = std::min(10, static_cast<int>(matches.size() - startIndex));
@@ -270,9 +265,7 @@ void runApplication() {
                     if (showingMatchDetails) {
                         if (key == 27) { // ESC
                             showingMatchDetails = false;
-                            // Rysujemy na nowo białą ramkę
                             drawFrame(width + 45, height, rightStartX, startY);
-                            // Przywracamy listę meczy
                             displayMatches(matches, player.puuid, currentStartIndex, selectedIndex, NameStartX2, matchesStartY, width);
                         }
                     }
@@ -302,9 +295,7 @@ void runApplication() {
                         }
                         else if (key == 13) { // ENTER
                             showingMatchDetails = true;
-                            // Wyczyść całą ramkę z listą meczy przed pokazaniem szczegółów
                             clearFrame(rightStartX, startY, width + 45, height);
-                            // Pokaż szczegóły meczu
                             matchInfo_t matchInfo = getMatchInfo(matches[selectedIndex], player.puuid);
                             displayMatchDetails(matchInfo, rightStartX, startY, width + 20);
                         }
