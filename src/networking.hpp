@@ -20,7 +20,7 @@ struct summonerInfo_t {
 	int summonerLevel;
 	std::string rank, tier;
 	int lp;
-	int32_t wins, losses; 
+	int32_t wins, losses;
 };
 
 struct playerMatchDetails_t {

@@ -3,20 +3,20 @@
 #include <format>
 
 #ifdef _WIN32
-    #define WIN32_LEAN_AND_MEAN
-    #include <Windows.h>
-    #include <winsock2.h>
-    #include <ws2tcpip.h>
-    #include <ws2def.h>
-    #include <ws2ipdef.h>
-    #include <wincrypt.h>
-    #include <WinNls.h>
-    #pragma comment (lib, "normaliz.lib")
-    #pragma comment(lib, "crypt32.lib")
-    #pragma comment (lib, "ws2_32.lib")
-    #pragma comment (lib, "wldap32.lib")
-    #pragma comment (lib, "mswsock.lib")
-    #pragma comment (lib, "advapi32.lib")
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include <ws2def.h>
+#include <ws2ipdef.h>
+#include <wincrypt.h>
+#include <WinNls.h>
+#pragma comment (lib, "normaliz.lib")
+#pragma comment(lib, "crypt32.lib")
+#pragma comment (lib, "ws2_32.lib")
+#pragma comment (lib, "wldap32.lib")
+#pragma comment (lib, "mswsock.lib")
+#pragma comment (lib, "advapi32.lib")
 #endif
 
 #define CURL_STATICLIB
@@ -43,7 +43,7 @@ inline void clearRBuff() {
 }
 
 inline nlohmann::json getResponseJson() {
-   
+
     nlohmann::json res = nlohmann::json::parse(responseBuff);
     clearRBuff();
     return res;
@@ -125,7 +125,7 @@ std::vector<std::string> getMatchesList(stringCRef _puuid, stringCRef _queueType
     std::vector<std::string> res{};
     for (size_t i = 0; i < responseJson.size(); i++) {
         res.push_back(responseJson[i]);
-    } 
+    }
 
     clearRBuff();
     return res;
@@ -147,15 +147,15 @@ matchInfo_t getMatchInfo(stringCRef _matchId, stringCRef _puuid) {
     nlohmann::json& playerDto = responseJson.at("info").at("participants").at(playerIndex);
 
     matchInfo_t res{};
-    
+
     //check for win
     res.gameDuration = responseJson.at("info").at("gameDuration");
-    for (auto& team : responseJson.at("info").at("teams")) 
+    for (auto& team : responseJson.at("info").at("teams"))
         if (team.at("teamId") == playerDto.at("teamId")) {
             res.win = team.at("win");
         }
         else continue;
-    
+
     res.matchId = _matchId;
     res.championName = playerDto.at("championName");
     res.kills = playerDto.at("kills");
@@ -180,18 +180,18 @@ summonerInfo_t getSummonerInfo(stringCRef _puuid) {
         std::format("api_key={}", apiKey_g)
     ));
     nlohmann::json SummonerDTO = getResponseJson();
-    std::cout << SummonerDTO.dump(1)<<"\n\n\n";
 
+    summonerInfo_t res{};
+    res.summonerLevel = SummonerDTO.at("summonerLevel").get<int>();
     std::string summonerId = SummonerDTO.at("id");
+
     sendRequest(std::format("{}/lol/league/v4/entries/by-summoner/{}?{}",
         euw1Begin_c,
         summonerId,
         std::format("api_key={}", apiKey_g)
     ));
     nlohmann::json LeagueEntryDTO = getResponseJson()[0];
-    std::cout << LeagueEntryDTO.dump(1);
 
-    summonerInfo_t res{};
     res.summonerId = summonerId;
     res.wins = LeagueEntryDTO.at("wins");
     res.losses = LeagueEntryDTO.at("losses");
@@ -211,7 +211,7 @@ gameInfo_t getGameInfo(stringCRef _matchId) {
     nlohmann::json MatchDto = getResponseJson();
     nlohmann::json& infoDto = MatchDto.at("info");
     nlohmann::json& teams = infoDto.at("teams");
-    
+
     int blueId = 100;
     gameInfo_t res{};
     for (auto participant : infoDto.at("participants")) {
