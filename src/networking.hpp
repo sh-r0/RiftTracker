@@ -20,9 +20,20 @@ struct summonerDTO_t {
 	int summonerLevel;
 };
 
+struct playerMatchDetails_t {
+	std::string championName;
+	int kills;
+	int deaths;
+	int assists;
+	int teamId;
+};
+
 struct matchInfo_t {
 	bool win;
 	int kills, deaths, assists;
+	std::string championName;
+	long long gameStartTimestamp;
+	std::vector<playerMatchDetails_t> teamPlayers;
 };
 
 using stringCRef = const std::string&;
