@@ -18,8 +18,6 @@ void setConsoleColor(int color) {
     SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), color);
 }
 
-
-
 int getConsoleWidth() {
     CONSOLE_SCREEN_BUFFER_INFO csbi;
     int width = 80;

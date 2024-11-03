@@ -39,7 +39,8 @@ inline void clearRBuff() {
     return;
 }
 
-inline nlohmann::json getResponseJson(void) {
+inline nlohmann::json getResponseJson() {
+   
     nlohmann::json res = nlohmann::json::parse(responseBuff);
     clearRBuff();
     return res;
@@ -64,6 +65,12 @@ void loadApiKey(const std::string& _path) {
     std::fstream stream(_path);
     std::ostringstream ostream; ostream << stream.rdbuf();
     apiKey_g = ostream.str();
+
+    if (apiKey_g.empty()) {
+        std::cerr << "Brak klucza API" << std::endl;
+    }
+    apiKey_g.erase(std::remove_if(apiKey_g.begin(), apiKey_g.end(), ::isspace), apiKey_g.end());
+
     return;
 }
 
@@ -110,12 +117,12 @@ std::vector<std::string> getMatchesList(stringCRef _puuid, stringCRef _queueType
         urlBegin_c,
         _puuid,
         std::format("api_key={}&start=0&count=20&type=", apiKey_g, _queueType)
-        ));
+    ));
     nlohmann::json responseJson = nlohmann::json::parse(responseBuff);
     std::vector<std::string> res{};
     for (size_t i = 0; i < responseJson.size(); i++) {
         res.push_back(responseJson[i]);
-    }
+    } 
 
     clearRBuff();
     return res;
@@ -128,23 +135,43 @@ matchInfo_t getMatchInfo(stringCRef _matchId, stringCRef _puuid) {
         std::format("api_key={}", apiKey_g)
     ));
     nlohmann::json responseJson = getResponseJson();
+    matchInfo_t res{};
+
+    // Znajdujemy informacje o g³ównym graczu
     size_t playerIndex = 0;
     for (; playerIndex < responseJson.at("metadata").at("participants").size(); playerIndex++) {
         if (responseJson.at("metadata").at("participants").at(playerIndex) == _puuid) break;
     }
+
     nlohmann::json& playerDto = responseJson.at("info").at("participants").at(playerIndex);
-    matchInfo_t res{};
 
-    //check for win
-    for (auto& team : responseJson.at("info").at("teams"))
-        if (team.at("teamId") == playerDto.at("teamId")) {
-            res.win = team.at("win");
-        }
-        else continue;
-
+    // Ustawiamy podstawowe pola zgodne z oryginaln¹ struktur¹
     res.kills = playerDto.at("kills");
     res.deaths = playerDto.at("deaths");
     res.assists = playerDto.at("assists");
+
+    // Dodajemy nowe informacje
+    res.championName = playerDto.at("championName").get<std::string>();
+    res.gameStartTimestamp = responseJson.at("info").at("gameStartTimestamp").get<long long>();
+
+    // Sprawdzanie wyniku
+    for (auto& team : responseJson.at("info").at("teams")) {
+        if (team.at("teamId") == playerDto.at("teamId")) {
+            res.win = team.at("win").get<bool>();
+            break;
+        }
+    }
+
+    // Zapisujemy informacje o wszystkich graczach
+    for (const auto& participant : responseJson.at("info").at("participants")) {
+        playerMatchDetails_t playerInfo;
+        playerInfo.championName = participant.at("championName").get<std::string>();
+        playerInfo.kills = participant.at("kills").get<int>();
+        playerInfo.deaths = participant.at("deaths").get<int>();
+        playerInfo.assists = participant.at("assists").get<int>();
+        playerInfo.teamId = participant.at("teamId").get<int>();
+        res.teamPlayers.push_back(playerInfo);
+    }
 
     return res;
 }
