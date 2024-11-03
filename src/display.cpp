@@ -9,28 +9,52 @@
 #include <conio.h> 
 #include <vector>
 #include <iomanip>
+#include <unordered_map>
+
+struct CachedMatchInfo {
+    std::vector<matchInfo_t> matches;
+    std::unordered_map<std::string, gameInfo_t> gameDetails;
+};
 
 void displayPlayerStats(const playerInfo_t& player, int startX, int startY, int nameWidth, int tagWidth) {
-    int frameWidth = nameWidth + tagWidth + 6; 
+    int frameWidth = nameWidth + tagWidth + 6;
+    const char VERTICAL_LINE = (char)186; // kod ascii dla ║
 
     for (int i = 0; i < 6; i++) {
         setCursorPosition(startX, startY + i);
-        std::cout << std::string(frameWidth, ' '); // Upewnij się, że czyścisz odpowiednią szerokość
+        std::cout << std::string(frameWidth, ' ');
     }
 
-    // nazwa i tag
-    setCursorPosition(startX, startY);
-    std::cout << "Nazwa: " << std::left << std::setw(nameWidth - 6) << player.gameName
-        << " Tag: #" << player.tagLine;
+    try {
+        summonerInfo_t summonerInfo = getSummonerInfo(player.puuid);
 
-    // ranga i dlugosc gier
-    setCursorPosition(startX, startY + 1);
-    // std::cout << "Ranga: " << std::left << std::setw(nameWidth - 6) << player.rank
-    //           << " Ilosc gier: " << player.gamesPlayed;
+        for (int i = 0; i < 6; i++) {
+            setCursorPosition(startX + frameWidth - 4, startY + i);
+            std::cout << VERTICAL_LINE;
+        }
 
-    // win ratio
-    setCursorPosition(startX, startY + 2);
-    // std::cout << "Win ratio: " << std::fixed << std::setprecision(2) << player.winRatio << "%";
+        setCursorPosition(startX, startY);
+        std::cout << "Nazwa: " << std::left << std::setw(nameWidth - 6) << player.gameName;
+        setCursorPosition(startX + nameWidth - 4, startY);
+        std::cout << "Tag: #" << player.tagLine;
+
+        setCursorPosition(startX, startY + 1);
+        std::cout << "Ranga: " << std::left << std::setw(nameWidth - 6) << summonerInfo.tier;
+        setCursorPosition(startX + nameWidth - 4, startY + 1);
+        std::cout << "Ilosc gier: " << (summonerInfo.wins + summonerInfo.losses);
+
+        setCursorPosition(startX, startY + 2);
+        float winRatio = (static_cast<float>(summonerInfo.wins) /
+            (summonerInfo.wins + summonerInfo.losses)) * 100;
+        std::cout << "Win ratio: " << std::fixed << std::setprecision(1) << winRatio << "%";
+
+        setCursorPosition(startX + nameWidth - 4, startY + 2);
+        std::cout << "Summoner level: " << summonerInfo.summonerLevel;
+    }
+    catch (const std::exception& e) {
+        setCursorPosition(startX, startY + 1);
+        std::cout << "Blad pobierania danych: " << e.what();
+    }
 }
 
 void clearFrame(int startX, int startY, int width, int height) {
@@ -47,7 +71,6 @@ void clearMatchesDisplay(int startX, int startY, int width, int height) {
     }
 }
 
-
 void clearMatchDetails(int startX, int startY, int width, int height) {
     width += 25; 
     height = 12; 
@@ -61,28 +84,35 @@ void clearMatchDetails(int startX, int startY, int width, int height) {
     std::cout << std::string(width + 1, ' ');
 }
 
-void displayMatches(const std::vector<std::string>& matches,
+void displayMatches(const std::vector<std::string>& matchIds,
     const std::string& puuid,
     int startIndex,
     int selectedIndex,
     int startX,
     int startY,
-    int frameWidth) {
+    int frameWidth,
+    CachedMatchInfo& cache) {
 
-    frameWidth += 25; 
+    frameWidth += 25;
     clearMatchesDisplay(startX, startY, frameWidth - 4, 20);
 
-    int displayCount = std::min(10, static_cast<int>(matches.size() - startIndex));
+    if (cache.matches.empty()) {
+        for (const auto& matchId : matchIds) {
+            cache.matches.push_back(getMatchInfo(matchId, puuid));
+        }
+    }
+
+    int displayCount = std::min(10, static_cast<int>(matchIds.size() - startIndex));
 
     setCursorPosition(startX, startY - 1);
     std::string navInfo = std::format("Strzalki: przewijanie, ENTER: szczegoly, ESC: wyjscie. Strona {}/{}",
         (startIndex / 10 + 1),
-        ((matches.size() + 9) / 10));
+        ((matchIds.size() + 9) / 10));
     std::cout << navInfo;
 
     for (int i = 0; i < displayCount; ++i) {
         int currentIndex = startIndex + i;
-        matchInfo_t matchInfo = getMatchInfo(matches[currentIndex], puuid);
+        const auto& matchInfo = cache.matches[currentIndex];
 
         time_t timestamp = matchInfo.gameStartTimestamp / 1000;
         tm timeinfo;
@@ -90,7 +120,7 @@ void displayMatches(const std::vector<std::string>& matches,
         char dateStr[20];
         strftime(dateStr, sizeof(dateStr), "%Y-%m-%d %H:%M", &timeinfo);
 
-        std::string matchNumberStr = std::format("Mecz {}/{}", (currentIndex + 1), matches.size());
+        std::string matchNumberStr = std::format("Mecz {}/{}", (currentIndex + 1), matchIds.size());
         std::string dateTimeStr = dateStr;
         std::string championStr = matchInfo.championName;
         std::string resultStr = (matchInfo.win ? "Wygrana" : "Przegrana");
@@ -112,14 +142,19 @@ void displayMatches(const std::vector<std::string>& matches,
             << kdaStr;
 
         if (currentIndex == selectedIndex) {
-            SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_RED);
+            SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_INTENSITY | FOREGROUND_RED);
         }
     }
 }
 
-void displayMatchDetails(const matchInfo_t& matchInfo, int startX, int startY, int width) {
+void displayMatchDetails(const std::string& matchId, int startX, int startY, int width, CachedMatchInfo& cache) {
     width += 25;
     drawFrame(width, 10, startX, startY);
+
+    if (cache.gameDetails.find(matchId) == cache.gameDetails.end()) {
+        cache.gameDetails[matchId] = getGameInfo(matchId);
+    }
+    const auto& gameInfo = cache.gameDetails[matchId];
 
     setCursorPosition(startX + 2, startY + 1);
     std::cout << "Szczegoly meczu (ESC - powrot do listy)";
@@ -131,16 +166,6 @@ void displayMatchDetails(const matchInfo_t& matchInfo, int startX, int startY, i
     }
     std::cout << "+";
 
-    std::vector<playerMatchDetails_t> team1, team2;
-    for (const auto& player : matchInfo.teamPlayers) {
-        if (player.teamId == 100) {
-            team1.push_back(player);
-        }
-        else {
-            team2.push_back(player);
-        }
-    }
-
     int team1Y = startY + 3;
     setCursorPosition(startX + 2, team1Y);
     std::cout << "Druzyna 1:";
@@ -150,10 +175,10 @@ void displayMatchDetails(const matchInfo_t& matchInfo, int startX, int startY, i
     for (int i = 0; i < 5; i++) {
         setCursorPosition(startX + positions[i], team1Y + 1);
         std::cout << std::format("{} {}/{}/{}",
-            team1[i].championName.substr(0, 10),
-            team1[i].kills,
-            team1[i].deaths,
-            team1[i].assists);
+            gameInfo.blueTeam[i].champName.substr(0, 10),
+            gameInfo.blueTeam[i].kills,
+            gameInfo.blueTeam[i].deaths,
+            gameInfo.blueTeam[i].assists);
     }
 
     int team2Y = startY + 6;
@@ -163,10 +188,10 @@ void displayMatchDetails(const matchInfo_t& matchInfo, int startX, int startY, i
     for (int i = 0; i < 5; i++) {
         setCursorPosition(startX + positions[i], team2Y + 1);
         std::cout << std::format("{} {}/{}/{}",
-            team2[i].championName.substr(0, 10),
-            team2[i].kills,
-            team2[i].deaths,
-            team2[i].assists);
+            gameInfo.redTeam[i].champName.substr(0, 10),
+            gameInfo.redTeam[i].kills,
+            gameInfo.redTeam[i].deaths,
+            gameInfo.redTeam[i].assists);
     }
 }
 
@@ -220,7 +245,6 @@ void runApplication() {
 
     playSwordAnimation(rightStartX + 2, startY + 2);
 
-
     int NameWidth2 = nameWidth;
     int TagWidth2 = tagWidth;
     int NameHeight2 = 3;
@@ -241,7 +265,6 @@ void runApplication() {
 
     try {
         playerInfo_t player = getPlayerInfo(cuttedName, cuttedTag);
-
         displayPlayerStats(player, nameStartX, nameStartY + 4, nameWidth, tagWidth);
         std::vector<std::string> matches = getMatchesList(player.puuid, "ranked");
         int matchesStartY = NameStartY2 + NameHeight2 + 2;
@@ -255,9 +278,10 @@ void runApplication() {
             int selectedIndex = 0;
             bool running = true;
             bool showingMatchDetails = false;
+            CachedMatchInfo cache; // Utworzenie cache'u
 
             drawFrame(width + 45, height, rightStartX, startY);
-            displayMatches(matches, player.puuid, currentStartIndex, selectedIndex, NameStartX2, matchesStartY, width);
+            displayMatches(matches, player.puuid, currentStartIndex, selectedIndex, NameStartX2, matchesStartY, width, cache);
 
             while (running) {
                 if (_kbhit()) {
@@ -266,7 +290,7 @@ void runApplication() {
                         if (key == 27) { // ESC
                             showingMatchDetails = false;
                             drawFrame(width + 45, height, rightStartX, startY);
-                            displayMatches(matches, player.puuid, currentStartIndex, selectedIndex, NameStartX2, matchesStartY, width);
+                            displayMatches(matches, player.puuid, currentStartIndex, selectedIndex, NameStartX2, matchesStartY, width, cache);
                         }
                     }
                     else {
@@ -279,7 +303,7 @@ void runApplication() {
                                     if (selectedIndex < currentStartIndex) {
                                         currentStartIndex = (selectedIndex / 10) * 10;
                                     }
-                                    displayMatches(matches, player.puuid, currentStartIndex, selectedIndex, NameStartX2, matchesStartY, width);
+                                    displayMatches(matches, player.puuid, currentStartIndex, selectedIndex, NameStartX2, matchesStartY, width, cache);
                                 }
                                 break;
                             case 80: // dół
@@ -288,7 +312,7 @@ void runApplication() {
                                     if (selectedIndex >= currentStartIndex + 10) {
                                         currentStartIndex = (selectedIndex / 10) * 10;
                                     }
-                                    displayMatches(matches, player.puuid, currentStartIndex, selectedIndex, NameStartX2, matchesStartY, width);
+                                    displayMatches(matches, player.puuid, currentStartIndex, selectedIndex, NameStartX2, matchesStartY, width, cache);
                                 }
                                 break;
                             }
@@ -296,10 +320,8 @@ void runApplication() {
                         else if (key == 13) { // ENTER
                             showingMatchDetails = true;
                             clearFrame(rightStartX, startY, width + 45, height);
-                            matchInfo_t matchInfo = getMatchInfo(matches[selectedIndex], player.puuid);
-                            displayMatchDetails(matchInfo, rightStartX, startY, width + 20);
+                            displayMatchDetails(matches[selectedIndex], rightStartX, startY, width + 20, cache);
                         }
-
                         else if (key == 27) { // ESC
                             running = false;
                         }
