@@ -32,6 +32,9 @@ std::string apiKey_g;
 size_t writtenToBuff = 0;
 //                                      /riot/account/v1/accounts/by-riot-id/{gameName}/{tagLine}?api_key=${API CODE}
 std::string urlBegin_c = "https://europe.api.riotgames.com";
+std::string euw1Begin_c = "https://euw1.api.riotgames.com";
+std::string eun1Begin_c = "https://eun1.api.riotgames.com";
+
 
 inline void clearRBuff() {
     writtenToBuff = 0;
@@ -135,7 +138,6 @@ matchInfo_t getMatchInfo(stringCRef _matchId, stringCRef _puuid) {
         std::format("api_key={}", apiKey_g)
     ));
     nlohmann::json responseJson = getResponseJson();
-    matchInfo_t res{};
 
     size_t playerIndex = 0;
     for (; playerIndex < responseJson.at("metadata").at("participants").size(); playerIndex++) {
@@ -144,11 +146,21 @@ matchInfo_t getMatchInfo(stringCRef _matchId, stringCRef _puuid) {
 
     nlohmann::json& playerDto = responseJson.at("info").at("participants").at(playerIndex);
 
+    matchInfo_t res{};
+    
+    //check for win
+    res.gameDuration = responseJson.at("info").at("gameDuration");
+    for (auto& team : responseJson.at("info").at("teams")) 
+        if (team.at("teamId") == playerDto.at("teamId")) {
+            res.win = team.at("win");
+        }
+        else continue;
+    
+    res.matchId = _matchId;
+    res.championName = playerDto.at("championName");
     res.kills = playerDto.at("kills");
     res.deaths = playerDto.at("deaths");
     res.assists = playerDto.at("assists");
-
-    res.championName = playerDto.at("championName").get<std::string>();
     res.gameStartTimestamp = responseJson.at("info").at("gameStartTimestamp").get<long long>();
 
     for (auto& team : responseJson.at("info").at("teams")) {
@@ -158,15 +170,64 @@ matchInfo_t getMatchInfo(stringCRef _matchId, stringCRef _puuid) {
         }
     }
 
-    // Zapisujemy informacje o wszystkich graczach
-    for (const auto& participant : responseJson.at("info").at("participants")) {
-        playerMatchDetails_t playerInfo;
-        playerInfo.championName = participant.at("championName").get<std::string>();
-        playerInfo.kills = participant.at("kills").get<int>();
-        playerInfo.deaths = participant.at("deaths").get<int>();
-        playerInfo.assists = participant.at("assists").get<int>();
-        playerInfo.teamId = participant.at("teamId").get<int>();
-        res.teamPlayers.push_back(playerInfo);
+    return res;
+}
+
+summonerInfo_t getSummonerInfo(stringCRef _puuid) {
+    sendRequest(std::format("{}/lol/summoner/v4/summoners/by-puuid/{}?{}",
+        euw1Begin_c,
+        _puuid,
+        std::format("api_key={}", apiKey_g)
+    ));
+    nlohmann::json SummonerDTO = getResponseJson();
+    std::cout << SummonerDTO.dump(1)<<"\n\n\n";
+
+    std::string summonerId = SummonerDTO.at("id");
+    sendRequest(std::format("{}/lol/league/v4/entries/by-summoner/{}?{}",
+        euw1Begin_c,
+        summonerId,
+        std::format("api_key={}", apiKey_g)
+    ));
+    nlohmann::json LeagueEntryDTO = getResponseJson()[0];
+    std::cout << LeagueEntryDTO.dump(1);
+
+    summonerInfo_t res{};
+    res.summonerId = summonerId;
+    res.wins = LeagueEntryDTO.at("wins");
+    res.losses = LeagueEntryDTO.at("losses");
+    res.rank = LeagueEntryDTO.at("rank");
+    res.tier = LeagueEntryDTO.at("tier");
+    res.lp = LeagueEntryDTO.at("leaguePoints");
+
+    return res;
+}
+
+gameInfo_t getGameInfo(stringCRef _matchId) {
+    sendRequest(std::format("{}/lol/match/v5/matches/{}?{}",
+        urlBegin_c,
+        _matchId,
+        std::format("api_key={}", apiKey_g)
+    ));
+    nlohmann::json MatchDto = getResponseJson();
+    nlohmann::json& infoDto = MatchDto.at("info");
+    nlohmann::json& teams = infoDto.at("teams");
+    
+    int blueId = 100;
+    gameInfo_t res{};
+    for (auto participant : infoDto.at("participants")) {
+        gameStat_t pStat{};
+        pStat.kills = participant.at("kills");
+        pStat.deaths = participant.at("deaths");
+        pStat.assists = participant.at("assists");
+        pStat.champName = participant.at("championName");
+        pStat.playerName = participant.at("summonerName");
+
+        if (participant.at("teamId") == blueId) {
+            res.blueTeam.push_back(pStat);
+        }
+        else {
+            res.redTeam.push_back(pStat);
+        }
     }
 
     return res;
