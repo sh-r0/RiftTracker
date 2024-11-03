@@ -137,7 +137,6 @@ matchInfo_t getMatchInfo(stringCRef _matchId, stringCRef _puuid) {
     nlohmann::json responseJson = getResponseJson();
     matchInfo_t res{};
 
-    // Znajdujemy informacje o g³ównym graczu
     size_t playerIndex = 0;
     for (; playerIndex < responseJson.at("metadata").at("participants").size(); playerIndex++) {
         if (responseJson.at("metadata").at("participants").at(playerIndex) == _puuid) break;
@@ -145,16 +144,13 @@ matchInfo_t getMatchInfo(stringCRef _matchId, stringCRef _puuid) {
 
     nlohmann::json& playerDto = responseJson.at("info").at("participants").at(playerIndex);
 
-    // Ustawiamy podstawowe pola zgodne z oryginaln¹ struktur¹
     res.kills = playerDto.at("kills");
     res.deaths = playerDto.at("deaths");
     res.assists = playerDto.at("assists");
 
-    // Dodajemy nowe informacje
     res.championName = playerDto.at("championName").get<std::string>();
     res.gameStartTimestamp = responseJson.at("info").at("gameStartTimestamp").get<long long>();
 
-    // Sprawdzanie wyniku
     for (auto& team : responseJson.at("info").at("teams")) {
         if (team.at("teamId") == playerDto.at("teamId")) {
             res.win = team.at("win").get<bool>();
